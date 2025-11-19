@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathVision - محلل المشتقات المتقدم</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Tahoma', 'Geneva', 'Verdana', sans-serif;
+        }
+
+        :root {
+            --primary: #3498db;
+            --primary-dark: #2980b9;
+            --secondary: #2ecc71;
+            --accent: #e74c3c;
+            --warning: #f39c12;
+            --purple: #9b59b6;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --gray: #7f8c8d;
+            --border: #bdc3c7;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --gradient: linear-gradient(135deg, #3498db, #2c3e50);
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* الهيدر */
+        .header {
+            background: var(--gradient);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="math" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0L0 0 0 20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23math)"/></svg>');
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            position: relative;
+        }
+
+        /* المحتوى الرئيسي */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            min-height: 700px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* العمود الأيسر */
+        .left-column {
+            background: var(--light);
+            padding: 30px;
+            border-right: 3px solid var(--border);
+        }
+
+        /* العمود الأيمن */
+        .right-column {
+            background: white;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* البطاقات */
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .card-title {
+            color: var(--dark);
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* نماذج الإدخال */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--dark);
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-group .form-control {
+            flex: 1;
+        }
+
+        /* الأزرار */
+        .btn {
+            padding: 14px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-success {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
+            transform: translateY(-2px);
+        }
+
+        .btn-purple {
+            background: var(--purple);
+            color: white;
+        }
+
+        .btn-purple:hover {
+            background: #8e44ad;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        /* الأمثلة */
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .example-btn {
+            background: var(--light);
+            border: 2px solid transparent;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .example-btn:hover {
+            border-color: var(--primary);
+            background: white;
+            transform: translateY(-2px);
+        }
+
+        /* منطقة النتائج */
+        .results {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px dashed var(--border);
+            flex: 1;
+            overflow-y: auto;
+            max-height: 400px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .result-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-right: 4px solid var(--primary);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        /* الرسم البياني */
+        .chart-container {
+            position: relative;
+            height: 400px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid var(--border);
+            margin-top: 20px;
+        }
+
+        /* قواعد الاشتقاق */
+        .rules-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .rules-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rules-list li:last-child {
+            border-bottom: none;
+        }
+
+        /* الفوتر */
+        .footer {
+            background: var(--dark);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        /* التبويبات */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* الرسوم المتحركة */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease;
+        }
+
+        /* التجاوب */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .left-column {
+                border-right: none;
+                border-bottom: 3px solid var(--border);
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                text-align: center;
+            }
+        }
+
+        /* شريط التقدم */
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .progress {
+            width: 0%;
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        /* الإشعارات */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .notification.success {
+            background: var(--secondary);
+        }
+
+        .notification.error {
+            background: var(--accent);
+        }
+
+        .notification.warning {
+            background: var(--warning);
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- الهيدر -->
+        <header class="header">
+            <h1>🧮 MathVision - محلل المشتقات المتقدم</h1>
+            <p>حساب المشتقات - دراسة الدوال - تمثيل بياني متكامل</p>
+        </header>
+
+        <!-- المحتوى الرئيسي -->
+        <div class="main-content">
+            <!-- العمود الأيسر -->
+            <div class="left-column">
+                <!-- بطاقة الإدخال -->
+                <div class="card fade-in">
+                    <h2 class="card-title">📝 إدخال البيانات</h2>
+                    
+                    <div class="form-group">
+                        <label for="functionInput">الدالة f(x):</label>
+                        <input type="text" id="functionInput" class="form-control" 
+                               placeholder="أدخل الدالة (مثال: x^2 + sin(x))" value="x^2">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="domainStart">مجال التعريف:</label>
+                        <div class="input-group">
+                            <input type="number" id="domainStart" class="form-control" value="-5" step="0.1">
+                            <span>إلى</span>
+                            <input type="number" id="domainEnd" class="form-control" value="5" step="0.1">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pointInput">النقطة x₀:</label>
+                        <input type="number" id="pointInput" class="form-control" value="2" step="0.1">
+                    </div>
+
+                    <!-- شريط التقدم -->
+                    <div class="progress-bar" id="progressBar">
+                        <div class="progress" id="progress"></div>
+                    </div>
+
+                    <!-- أزرار الوظائف -->
+                    <button class="btn btn-primary" onclick="calculateDerivativeAtPoint()">
+                        🔍 حساب المشتقة عند نقطة
+                    </button>
+                    <button class="btn btn-success" onclick="calculateDerivativeFunction()">
+                        📐 اشتقاق الدالة
+                    </button>
+                    <button class="btn btn-warning" onclick="studyFunctionBehavior()">
+                        📈 دراسة اتجاه التغير
+                    </button>
+                    <button class="btn btn-purple" onclick="boundFunction()">
+                        📊 حصر الدالة
+                    </button>
+                    <button class="btn btn-danger" onclick="plotGraph()">
+                        🎨 تمثيل بياني
+                    </button>
+                </div>
+
+                <!-- بطاقة الأمثلة -->
+                <div class="card fade-in" style="animation-delay: 0.2s;">
+                    <h2 class="card-title">📚 أمثلة دوال</h2>
+                    <div class="examples-grid">
+                        <div class="example-btn" onclick="loadExample('x^2')">x²</div>
+                        <div class="example-btn" onclick="loadExample('x^3')">x³</div>
+                        <div class="example-btn" onclick="loadExample('sin(x)')">sin(x)</div>
+                        <div class="example-btn" onclick="loadExample('cos(x)')">cos(x)</div>
+                        <div class="example-btn" onclick="loadExample('exp(x)')">eˣ</div>
+                        <div class="example-btn" onclick="loadExample('ln(x)')">ln(x)</div>
+                        <div class="example-btn" onclick="loadExample('x^2 + sin(x)')">x²+sin(x)</div>
+                        <div class="example-btn" onclick="loadExample('x^3 - 3*x')">x³-3x</div>
+                        <div class="example-btn" onclick="loadExample('sin(x)*cos(x)')">sin(x)cos(x)</div>
+                        <div class="example-btn" onclick="loadExample('1/x')">1/x</div>
+                        <div class="example-btn" onclick="loadExample('sqrt(x)')">√x</div>
+                        <div class="example-btn" onclick="loadExample('tan(x)')">tan(x)</div>
+                    </div>
+                </div>
+
+                <!-- بطاقة قواعد الاشتقاق -->
+                <div class="card fade-in" style="animation-delay: 0.4s;">
+                    <h2 class="card-title">📖 قواعد الاشتقاق</h2>
+                    <ul class="rules-list">
+                        <li>📐 <strong>القوة:</strong> (xⁿ)' = n·xⁿ⁻¹</li>
+                        <li>➕ <strong>الجمع:</strong> (u+v)' = u' + v'</li>
+                        <li>➖ <strong>الطرح:</strong> (u-v)' = u' - v'</li>
+                        <li>✖️ <strong>الضرب:</strong> (u·v)' = u'v + uv'</li>
+                        <li>➗ <strong>القسمة:</strong> (u/v)' = (u'v - uv')/v²</li>
+                        <li>🔄 <strong>السلسلة:</strong> (f(g(x)))' = f'(g(x))·g'(x)</li>
+                        <li>📏 <strong>sin(x):</strong> (sin(x))' = cos(x)</li>
+                        <li>📐 <strong>cos(x):</strong> (cos(x))' = -sin(x)</li>
+                        <li>📈 <strong>tan(x):</strong> (tan(x))' = 1/cos²(x)</li>
+                        <li>⚡ <strong>eˣ:</strong> (eˣ)' = eˣ</li>
+                        <li>📊 <strong>ln(x):</strong> (ln(x))' = 1/x</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- العمود الأيمن -->
+            <div class="right-column">
+                <!-- التبويبات -->
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('results')">📊 النتائج</div>
+                    <div class="tab" onclick="switchTab('graph')">📈 الرسم البياني</div>
+                </div>
+
+                <!-- محتوى التبويب النتائج -->
+                <div id="resultsTab" class="tab-content active">
+                    <div class="card">
+                        <h2 class="card-title">📋 النتائج والتحليل</h2>
+                        <div class="results" id="results">
+                            <div class="result-item">
+                                <div class="result-title">👋 مرحباً في MathVision!</div>
+                                <div>أدخل دالة رياضية واضغط على أحد الأزرار لبدء التحليل.</div>
+                                <div>يمكنك استخدام الأمثلة السريعة أو إدخال دالة مخصصة.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- محتوى التبويب الرسم البياني -->
+                <div id="graphTab" class="tab-content">
+                    <div class="card">
+                        <h2 class="card-title">🎨 التمثيل البياني على معلم متعامد متجانس</h2>
+                        <div class="chart-container">
+                            <canvas id="functionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- الفوتر -->
+        <footer class="footer">
+            <p>🚀 MathVision - تطبيق تحليل الدوال والمشتقات المتقدم</p>
+            <p>📧 للإستفسارات: mathvision@derivative.com</p>
+        </footer>
+    </div>
+
+    <!-- التطبيق الرئيسي -->
+    <script>
+        // تهيئة الرسم البياني
+        const ctx = document.getElementById('functionChart').getContext('2d');
+        let functionChart = null;
+
+        // محرك الدوال الرياضية
+        class MathFunctionEngine {
+            constructor() {
+                this.parser = math.parser();
+            }
+
+            evaluate(expression, x) {
+                try {
+                    // تنظيف التعبير
+                    let cleanExpr = expression.toLowerCase().replace(/ /g, '');
+                    
+                    // استبدال الرموز
+                    cleanExpr = cleanExpr.replace(/²/g, '^2');
+                    cleanExpr = cleanExpr.replace(/³/g, '^3');
+                    
+                    // تعيين المتغير x
+                    this.parser.evaluate('x = ' + x);
+                    
+                    // تقييم التعبير
+                    const result = this.parser.evaluate(cleanExpr);
+                    return result;
+                } catch (error) {
+                    throw new Error('خطأ في تقييم الدالة: ' + error.message);
+                }
+            }
+
+            derivativeAt(expression, x) {
+                const h = 1e-8;
+                try {
+                    const f1 = this.evaluate(expression, x + h);
+                    const f2 = this.evaluate(expression, x - h);
+                    return (f1 - f2) / (2 * h);
+                } catch (error) {
+                    throw new Error('خطأ في حساب المشتقة: ' + error.message);
+                }
+            }
+
+            secondDerivativeAt(expression, x) {
+                const h = 1e-6;
+                try {
+                    const f1 = this.evaluate(expression, x + h);
+                    const f0 = this.evaluate(expression, x);
+                    const f2 = this.evaluate(expression, x - h);
+                    return (f1 - 2 * f0 + f2) / (h * h);
+                } catch (error) {
+                    throw new Error('خطأ في حساب المشتقة الثانية: ' + error.message);
+                }
+            }
+
+            getSymbolicDerivative(expression) {
+                // هذا تنفيذ مبسط للمشتقة الرمزية
+                const rules = {
+                    'x^2': '2*x',
+                    'x^3': '3*x^2',
+                    'x^4': '4*x^3',
+                    'sin(x)': 'cos(x)',
+                    'cos(x)': '-sin(x)',
+                    'exp(x)': 'exp(x)',
+                    'ln(x)': '1/x',
+                    '1/x': '-1/x^2',
+                    'sqrt(x)': '1/(2*sqrt(x))'
+                };
+
+                for (const [func, deriv] of Object.entries(rules)) {
+                    if (expression === func) {
+                        return deriv;
+                    }
+                }
+
+                return 'مشتقة رقمية';
+            }
+        }
+
+        // إنشاء محرك الدوال
+        const mathEngine = new MathFunctionEngine();
+
+        // 🔍 حساب المشتقة عند نقطة
+        async function calculateDerivativeAtPoint() {
+            showProgress();
+            
+            try {
+                const functionStr = document.getElementById('functionInput').value;
+                const x0 = parseFloat(document.getElementById('pointInput').value);
+                
+                if (!functionStr) {
+                    throw new Error('الرجاء إدخال دالة');
+                }
+
+                updateProgress(30);
+                const functionValue = mathEngine.evaluate(functionStr, x0);
+                
+                updateProgress(60);
+                const derivative = mathEngine.derivativeAt(functionStr, x0);
+                const symbolicDeriv = mathEngine.getSymbolicDerivative(functionStr);
+                
+                updateProgress(90);
+                let behavior = '';
+                if (Math.abs(derivative) < 1e-10) {
+                    behavior = 'ثابتة (نقطة حرجة)';
+                } else if (derivative > 0) {
+                    behavior = 'تزايدية';
+                } else {
+                    behavior = 'تناقصية';
+                }
+
+                const result = `
+                    <div class="result-item">
+                        <div class="result-title">🎯 حساب المشتقة عند نقطة</div>
+                        <div><strong>الدالة:</strong> f(x) = ${functionStr}</div>
+                        <div><strong>المشتقة الرمزية:</strong> f'(x) = ${symbolicDeriv}</div>
+                        <div><strong>النقطة:</strong> x₀ = ${x0}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-title">📊 النتائج</div>
+                        <div><strong>قيمة الدالة:</strong> f(${x0}) = ${functionValue.toFixed(6)}</div>
+                        <div><strong>المشتقة العددية:</strong> f'(${x0}) = ${derivative.toFixed(6)}</div>
+                        <div><strong>اتجاه التغير:</strong> ${behavior}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-title">💡 تفسير</div>
+                        <div>ميل المماس للدالة عند النقطة x = ${x0} هو ${derivative.toFixed(6)}</div>
+                        <div>الاتجاه: ${behavior}</div>
+                    </div>
+                `;
+
+                document.getElementById('results').innerHTML = result;
+                showNotification('✅ تم حساب المشتقة بنجاح', 'success');
+                
+            } catch (error) {
+                showNotification('❌ ' + error.message, 'error');
+            } finally {
+                hideProgress();
+            }
+        }
+
+        // 📐 اشتقاق الدالة
+        async function calculateDerivativeFunction() {
+            showProgress();
+            
+            try {
+                const functionStr = document.getElementById('functionInput').value;
+                const start = parseFloat(document.getElementById('domainStart').value);
+                const end = parseFloat(document.getElementById('domainEnd').value);
+                
+                if (!functionStr) {
+                    throw new Error('الرجاء إدخال دالة');
+                }
+
+                const symbolicDeriv = mathEngine.getSymbolicDerivative(functionStr);
+                
+                let resultHTML = `
+                    <div class="result-item">
+                        <div class="result-title">📐 اشتقاق الدالة</div>
+                        <div><strong>الدالة:</strong> f(x) = ${functionStr}</div>
+                        <div><strong>المشتقة الرمزية:</strong> f'(x) = ${symbolicDeriv}</div>
+                        <div><strong>المجال:</strong> [${start}, ${end}]</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-title">📈 قيم المشتقة</div>
+                `;
+
+                const samples = 8;
+                const step = (end - start) / samples;
+                
+                for (let i = 0; i <= samples; i++) {
+                    updateProgress(30 + (i / samples) * 60);
+                    const x = start + i * step;
+                    const derivative = mathEngine.derivativeAt(functionStr, x);
+                    resultHTML += `<div><strong>f'(${x.toFixed(2)})</strong> = ${derivative.toFixed(4)}</div>`;
+                    
+                    // تأخير بسيط للعرض المتدرج
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+
+                resultHTML += `</div>`;
+                document.getElementById('results').innerHTML = resultHTML;
+                showNotification('✅ تم اشتقاق الدالة بنجاح', 'success');
+                
+            } catch (error) {
+                showNotification('❌ ' + error.message, 'error');
+            } finally {
+                hideProgress();
+            }
+        }
+
+        // 📈 دراسة اتجاه التغير
+        async function studyFunctionBehavior() {
+            showProgress();
+            
+            try {
+                const functionStr = document.getElementById('functionInput').value;
+                const start = parseFloat(document.getElementById('domainStart').value);
+                const end = parseFloat(document.getElementById('domainEnd').value);
+                
+                if (!functionStr) {
+                    throw new Error('الرجاء إدخال دالة');
+                }
+
+                let resultHTML = `
+                    <div class="result-item">
+                        <div class="result-title">📈 دراسة اتجاه تغير الدالة</div>
+                        <div><strong>الدالة:</strong> f(x) = ${functionStr}</div>
+                        <div><strong>المشتقة:</strong> f'(x) = ${mathEngine.getSymbolicDerivative(functionStr)}</div>
+                        <div><strong>المجال:</strong> [${start}, ${end}]</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-title">🔍 التحليل التفصيلي</div>
+                `;
+
+                const intervals = 10;
+                const step = (end - start) / intervals;
+                const criticalPoints = [];
+                
+                for (let i = 0; i <= intervals; i++) {
+                    updateProgress(30 + (i / intervals) * 60);
+                    const x = start + i * step;
+                    const derivative = mathEngine.derivativeAt(functionStr, x);
+                    
+                    let behavior = '';
+                    if (Math.abs(derivative) < 1e-8) {
+                        behavior = '📌 نقطة حرجة';
+                        criticalPoints.push(x);
+                    } else if (derivative > 0) {
+                        behavior = '📈 تزايدية';
+                    } else {
+                        behavior = '📉 تناقصية';
+                    }
+                    
+                    resultHTML += `<div><strong>x = ${x.toFixed(2)}:</strong> f'(x) = ${derivative.toFixed(4)} → ${behavior}</div>`;
+                    await new Promise(resolve => setTimeout(resolve, 150));
+                }
+
+                resultHTML += `</div>`;
+
+                if (criticalPoints.length > 0) {
+                    resultHTML += `
+                        <div class="result-item">
+                            <div class="result-title">🎯 النقاط الحرجة</div>
+                    `;
+                    
+                    for (const point of criticalPoints) {
+                        const secondDeriv = mathEngine.secondDerivativeAt(functionStr, point);
+                        let pointType = '';
+                        if (secondDeriv > 0) {
+                            pointType = '📍 صغرى محلية';
+                        } else if (secondDeriv < 0) {
+                            pointType = '🏔️ عظمى محلية';
+                        } else {
+                            pointType = '🔄 نقطة انقلاب';
+                        }
+                        resultHTML += `<div><strong>x = ${point.toFixed(3)}:</strong> ${pointType} (f'' = ${secondDeriv.toFixed(3)})</div>`;
+                    }
+                    
+                    resultHTML += `</div>`;
+                }
+
+                document.getElementById('results').innerHTML = resultHTML;
+                showNotification('✅ تم دراسة اتجاه التغير بنجاح', 'success');
+                
+            } catch (error) {
+                showNotification('❌ ' + error.message, 'error');
+            } finally {
+                hideProgress();
+            }
+        }
+
+        // 📊 حصر الدالة
+        async function boundFunction() {
+            showProgress();
+            
+            try {
+                const functionStr = document.getElementById('functionInput').value;
+                const start = parseFloat(document.getElementById('domainStart').value);
+                const end = parseFloat(document.getElementById('domainEnd').value);
+                
+                if (!functionStr) {
+                    throw new Error('الرجاء إدخال دالة');
+                }
+
+                let minVal = Infinity;
+                let maxVal = -Infinity;
+                let minX = start, maxX = start;
+                
+                const samples = 50;
+                const step = (end - start) / samples;
+                
+                for (let i = 0; i <= samples; i++) {
+                    updateProgress(30 + (i / samples) * 60);
+                    const x = start + i * step;
+                    const y = mathEngine.evaluate(functionStr, x);
+                    
+                    if (y < minVal) {
+                        minVal = y;
+                        minX = x;
+                    }
+                    if (y > maxVal) {
+                        maxVal = y;
+                        maxX = x;
+                    }
+                    
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+
+                const result = `
+                    <div class="result-item">
+                        <div class="result-title">📊 حصر الدالة على المجال</div>
+                        <div><strong>الدالة:</strong> f(x) = ${functionStr}</div>
+                        <div><strong>المجال:</strong> [${start}, ${end}]</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-title">🎯 النتائج</div>
+                        <div><strong>القيمة الصغرى:</strong> f(${minX.toFixed(4)}) = ${minVal.toFixed(4)}</div>
+                        <div><strong>القيمة العظمى:</strong> f(${maxX.toFixed(4)}) = ${maxVal.toFixed(4)}</div>
+                        <div><strong>مدى الدالة:</strong> [${minVal.toFixed(4)}, ${maxVal.toFixed(4)}]</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-title">📐 التحليل</div>
+                        <div>الدالة محدودة بين ${minVal.toFixed(4)} و ${maxVal.toFixed(4)}</div>
+                        <div>مجال القيم: [${minVal.toFixed(4)}, ${maxVal.toFixed(4)}]</div>
+                    </div>
+                `;
+
+                document.getElementById('results').innerHTML = result;
+                showNotification('✅ تم حصر الدالة بنجاح', 'success');
+                
+            } catch (error) {
+                showNotification('❌ ' + error.message, 'error');
+            } finally {
+                hideProgress();
+            }
+        }
+
+        // 🎨 تمثيل بياني
+        async function plotGraph() {
+            showProgress();
+            
+            try {
+                const functionStr = document.getElementById('functionInput').value;
+                const start = parseFloat(document.getElementById('domainStart').value);
+                const end = parseFloat(document.getElementById('domainEnd').value);
+                
+                if (!functionStr) {
+                    throw new Error('الرجاء إدخال دالة');
+                }
+
+                // تحويل إلى تبويب الرسم البياني
+                switchTab('graph');
+
+                // إعداد البيانات
+                const points = 100;
+                const step = (end - start) / points;
+                
+                const labels = [];
+                const functionData = [];
+                const derivativeData = [];
+                
+                for (let i = 0; i <= points; i++) {
+                    updateProgress(30 + (i / points) * 60);
+                    const x = start + i * step;
+                    
+                    try {
+                        const y = mathEngine.evaluate(functionStr, x);
+                        const dy = mathEngine.derivativeAt(functionStr, x);
+                        
+                        labels.push(x.toFixed(2));
+                        functionData.push(y);
+                        derivativeData.push(dy);
+                    } catch (e) {
+                        // تجاهل النقاط غير المعرفة
+                    }
+                    
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                }
+
+                // تدمير الرسم البياني القديم إذا كان موجوداً
+                if (functionChart) {
+                    functionChart.destroy();
+                }
+
+                // إنشاء الرسم البياني الجديد
+                functionChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'f(x) - الدالة',
+                            data: functionData,
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            fill: true
+                        }, {
+                            label: 'f\'(x) - المشتقة',
+                            data: derivativeData,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'المحور X - الفواصل',
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'المحور Y - الترتيب',
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        }
+                    }
+                });
+
+                // عرض النتائج في التبويب الآخر
+                document.getElementById('results').innerHTML = `
+                    <div class="result-item">
+                        <div class="result-title">✅ تم إنشاء التمثيل البياني</div>
+                        <div><strong>الدالة:</strong> f(x) = ${functionStr}</div>
+                        <div><strong>المشتقة:</strong> f'(x) = ${mathEngine.getSymbolicDerivative(functionStr)}</div>
+                        <div><strong>المجال:</strong> [${start}, ${end}]</div>
+                        <div><strong>النقاط:</strong> ${points} نقطة</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-title">🎨 ميزات الرسم</div>
+                        <div>• الخط الأزرق: الدالة الأصلية f(x)</div>
+                        <div>• الخط الأحمر: المشتقة f'(x)</div>
+                        <div>• معلم متعامد متجانس مع محورين</div>
+                        <div>• اتجاهات موجبة وسالبة واضحة</div>
+                    </div>
+                `;
+
+                showNotification('✅ تم إنشاء الرسم البياني بنجاح', 'success');
+                
+            } catch (error) {
+                showNotification('❌ ' + error.message, 'error');
+            } finally {
+                hideProgress();
+            }
+        }
+
+        // وظائف مساعدة
+        function loadExample(example) {
+            document.getElementById('functionInput').value = example;
+            showNotification(`📚 تم تحميل المثال: ${example}`, 'success');
+        }
+
+        function switchTab(tabName) {
+            // إخفاء جميع المحتويات
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // إلغاء تنشيط جميع التبويبات
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // تفعيل التبويب المطلوب
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function showProgress() {
+            document.getElementById('progressBar').style.display = 'block';
+            updateProgress(0);
+        }
+
+        function updateProgress(percent) {
+            document.getElementById('progress').style.width = percent + '%';
+        }
+
+        function hideProgress() {
+            setTimeout(() => {
+                document.getElementById('progressBar').style.display = 'none';
+                updateProgress(0);
+            }, 500);
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 4000);
+        }
+
+        // تهيئة الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            showNotification('🚀 MathVision جاهز للاستخدام!', 'success');
+        });
+    </script>
+</body>
+</html>
